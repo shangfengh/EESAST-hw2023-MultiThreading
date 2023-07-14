@@ -75,6 +75,71 @@ namespace Homework
 
         //挑战：利用原子操作
         //long.MaxValue非常久
+
+        public long _isStart = 0;
+        public long _needTime = 0;
+        public long _startTime = 0;
+
+        public void Check()
+        {
+            if (Interlocked.Read(ref _isStart) == 1)
+            {
+                long elapsedTime = Environment.TickCount64 - Interlocked.Read(ref _startTime);
+                long needTime = Interlocked.Read(ref _needTime);
+                if (elapsedTime >= needTime)
+                {
+                    Interlocked.Exchange(ref _isStart, 0);
+                }
+            }
+        }
+
+        public bool Start(long needTime)
+        {
+            Check();
+            if (Interlocked.Read(ref _isStart) == 0)
+            {
+                Interlocked.Exchange(ref _needTime, needTime);
+                Interlocked.Exchange(ref _isStart, 1);
+                Interlocked.Exchange(ref _startTime, Environment.TickCount64);
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        public bool TrySet0()
+        {
+            Check();
+            if (Interlocked.Read(ref _isStart) == 0)
+            {
+                return false;
+            }
+            else
+            {
+                Interlocked.Exchange(ref _isStart, 0);
+                Interlocked.Exchange(ref _needTime, 0);
+                Interlocked.Exchange(ref _startTime, 0);
+                return true;
+            }
+        }
+
+        public void Set0()
+        {
+            Check();
+            Interlocked.Exchange(ref _isStart, 0);
+            Interlocked.Exchange(ref _needTime, 0);
+            Interlocked.Exchange(ref _startTime, 0);
+        }
+
+        public (long ElapsedTime, long NeedTime) GetProgress()
+        {
+            Check();
+            long elapsedTime = Environment.TickCount64 - Interlocked.Read(ref _startTime);
+            long needTime = Interlocked.Read(ref _needTime);
+            return (elapsedTime, needTime);
+        }
     }
 
 /*输出示例：
