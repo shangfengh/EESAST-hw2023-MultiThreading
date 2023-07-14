@@ -1,4 +1,4 @@
-# CSharp 作业
+# MultiThreading 作业
 
 ------
 
@@ -8,14 +8,14 @@
 
 ## 题目及要求
 
-- 根据Program.cs中IProgress的要求修改Progress类中的代码
-- 作业地址[https://github.com/shangfengh/EESAST-hw2023-CSharp1/tree/main](https://github.com/shangfengh/EESAST-hw2023-CSharp1/tree/main)
+- 根据Program.cs中ILongProgressByTime的要求修改LongProgressByTime类中的代码
+- 作业地址[https://github.com/shangfengh/EESAST-hw2023-MultiThreading](https://github.com/shangfengh/EESAST-hw2023-MultiThreading)
 
 ## 提交方式
 
 GitHub 提交
 
-- fork 仓库：[shangfengh/EESAST-hw2023-CSharp1(github.com)](https://github.com/shangfengh/EESAST-hw2023-CSharp1/tree/main)到个人仓库，按要求修改好后，从个人仓库提pr到原本的仓库，pr信息填写为：`CSharp_姓名_班级` （如：`CSharp_大佬_无29`）。
+- fork 仓库：[shangfengh/EESAST-hw2023-MultiThreading(github.com)](https://github.com/shangfengh/EESAST-hw2023-MultiThreading)到个人仓库，按要求修改好后，从个人仓库提pr到原本的仓库，pr信息填写为：`CSharp_姓名_班级` （如：`CSharp_大佬_无29`）。
 
 ## 截止日期
 
