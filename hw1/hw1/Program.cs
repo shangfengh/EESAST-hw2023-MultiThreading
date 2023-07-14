@@ -13,9 +13,6 @@ namespace Homework
                     () =>
                     {
                         Console.WriteLine("A Start: "+(a.Start(2000)).ToString());
-
-                        Console.WriteLine("A Progress: "+(a.GetProgress()).ToString() +" Now: "+Environment.TickCount64);
-
                         Thread.Sleep(1000);
                         Console.WriteLine("A TrySet0: "+(a.TrySet0()).ToString());
                         Thread.Sleep(500);
@@ -32,9 +29,6 @@ namespace Homework
                     () =>
                     {
                         Console.WriteLine("B Start: "+(a.Start(2000)).ToString());
-
-                        Console.WriteLine("B Progress: "+(a.GetProgress()).ToString() +" Now: "+Environment.TickCount64);
-
                         Thread.Sleep(1500);
                         Console.WriteLine("B Start: " +(a.Start(1000)).ToString() + " Now: " + Environment.TickCount64);
                         Thread.Sleep(500);
