@@ -65,6 +65,62 @@ namespace Homework
 
     public class LongProgressByTime: ILongProgressByTime
     {
+        private long startTime;     // 进度条开始时间
+        private long needTime;      // 当前Progress完成所需时间
+        private bool isTerminated;  // 进度条是否已终止
+
+        public LongProgressByTime()
+        {
+            startTime = 0;
+            needTime = 0;
+            isTerminated = true;
+        }
+
+        public bool Start(long NeedTime)
+        {
+            if (isTerminated)
+            {
+                this.needTime = NeedTime;
+                startTime = Environment.TickCount64;
+                isTerminated = false;
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        public bool TrySet0()
+        {
+            if (!isTerminated)
+            {
+                isTerminated = true;
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        public void Set0()
+        {
+            isTerminated = true;
+        }
+
+        public (long ElapsedTime, long NeedTime) GetProgress()
+        {
+            if (isTerminated)
+            {
+                return (0, 0);
+            }
+            else
+            {
+                long elapsedTime = Environment.TickCount64 - startTime;
+                return (elapsedTime, needTime);
+            }
+        }
         // 根据时间推算Start后完成多少进度的进度条（long）。
         // 只允许Start时修改needTime（确保较大）；
         // 支持TrySet0使未完成的进度条终止清零；
