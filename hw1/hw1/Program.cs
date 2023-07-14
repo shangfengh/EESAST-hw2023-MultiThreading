@@ -13,6 +13,9 @@ namespace Homework
                     () =>
                     {
                         Console.WriteLine("A Start: "+(a.Start(2000)).ToString());
+
+                        Console.WriteLine("A Progress: "+(a.GetProgress()).ToString() +" Now: "+Environment.TickCount64);
+
                         Thread.Sleep(1000);
                         Console.WriteLine("A TrySet0: "+(a.TrySet0()).ToString());
                         Thread.Sleep(500);
@@ -29,6 +32,9 @@ namespace Homework
                     () =>
                     {
                         Console.WriteLine("B Start: "+(a.Start(2000)).ToString());
+
+                        Console.WriteLine("B Progress: "+(a.GetProgress()).ToString() +" Now: "+Environment.TickCount64);
+
                         Thread.Sleep(1500);
                         Console.WriteLine("B Start: " +(a.Start(1000)).ToString() + " Now: " + Environment.TickCount64);
                         Thread.Sleep(500);
@@ -75,6 +81,97 @@ namespace Homework
 
         //挑战：利用原子操作
         //long.MaxValue非常久
+        private long _startTime;
+        private long _needTime;
+        private long _elapsedTime = 0;
+        private bool _running = false;
+        private Mutex _mutex = new Mutex();
+        public bool Start(long needTime) 
+        {
+            bool result = false;
+            long elapsedTime = 0;
+            _mutex.WaitOne();
+            try
+            {
+                elapsedTime = Environment.TickCount64 - _startTime + _elapsedTime;
+                result = !_running || (elapsedTime >= _needTime);
+                if(result)
+                {
+                    _startTime = Environment.TickCount64;
+                    _needTime = needTime;
+                    _elapsedTime = 0;
+                    _running = true;
+                }
+            }
+            finally
+            {
+                _mutex.ReleaseMutex();
+            }
+            return result;
+        }
+
+        public bool TrySet0()
+        {
+            long elapsedTime = 0;
+            bool result = false;
+            _mutex.WaitOne();
+            try
+            {
+                elapsedTime = Environment.TickCount64 - _startTime + _elapsedTime;
+                result = !_running || (elapsedTime >= _needTime);
+                if(!result)
+                {
+                    _running = false;
+                    _elapsedTime = 0;
+                }
+            }
+            finally
+            {
+                _mutex.ReleaseMutex();
+            }
+            return !result;
+        }
+
+        public void Set0()
+        {
+            _mutex.WaitOne();
+            try
+            {
+                _running = false;
+                _elapsedTime = 0;
+            }
+            finally
+            {
+                _mutex.ReleaseMutex();
+            }
+        }
+
+        public (long ElapsedTime, long NeedTime) GetProgress()
+        {
+            bool result = false;
+            long elapsedTime = 0;
+            _mutex.WaitOne();
+            try
+            {
+                if(_running)
+                    elapsedTime = Environment.TickCount64 - _startTime + _elapsedTime;
+                else
+                    elapsedTime = _elapsedTime;
+                result = (elapsedTime >= _needTime);
+                if(result)
+                {
+                    _running = false;
+                    _elapsedTime = _needTime;
+                    elapsedTime = _elapsedTime;
+                }
+            }
+            finally
+            {
+                _mutex.ReleaseMutex();
+            }
+            return (elapsedTime, _needTime);
+        }
+
     }
 
 /*输出示例：
