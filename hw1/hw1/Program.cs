@@ -89,7 +89,7 @@ namespace Homework
         {
             lock (_lock)
             {
-                if (this.GetProgress().ElapsedTime >= this.needTime && this.needTime != 0) this.stop = 1;
+                if (this.GetProgress().ElapsedTime >= this.needTime) this.stop = 1;
                 if (this.stop != 0)
                 {
                     this.needTime = needTime;
