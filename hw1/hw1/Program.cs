@@ -42,18 +42,18 @@ namespace Homework
     {
         /// <summary>
         /// 尝试加载下一次进度条，needTime指再次加载进度条所需时间，单位毫秒
-        /// 如果之前进度条已经终止，则将进度开始下一次加载，返回true
-        /// 如果之前进度条尚未终止，返回false
+        /// 如果之前进度条已经清零并终止，则将进度开始下一次加载，返回true
+        /// 如果之前进度条尚未清零并终止，返回false
         /// </summary>
         public bool Start(long needTime);
 
         /// <summary>
-        /// 使未完成的进度条终止清零，返回值代表是否成功终止
+        /// 使未完成的进度条清零并终止，返回值代表是否成功终止
         /// </summary>
         public bool TrySet0();
 
         /// <summary>
-        /// 使进度条强制终止清零
+        /// 使进度条强制清零并终止
         /// </summary>
         public void Set0();
 
