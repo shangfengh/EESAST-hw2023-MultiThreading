@@ -75,7 +75,7 @@ namespace Homework
         //long.MaxValue非常久
     }
 
-/*输出示例：
+/*输出示例（仅供参考）：
  * A Start: False
 B Start: True
 A TrySet0: True
