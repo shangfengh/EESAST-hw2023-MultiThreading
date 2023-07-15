@@ -5,22 +5,22 @@ namespace Homework
 {
     public class Program
     {
-        public static void Main(string[] args) 
+        public static void Main(string[] args)
         {
             ILongProgressByTime a = new LongProgressByTime();
             new Thread
                 (
                     () =>
                     {
-                        Console.WriteLine("A Start: "+(a.Start(2000)).ToString());
+                        Console.WriteLine("A Start: " + (a.Start(2000)).ToString());
                         Thread.Sleep(1000);
-                        Console.WriteLine("A TrySet0: "+(a.TrySet0()).ToString());
+                        Console.WriteLine("A TrySet0: " + (a.TrySet0()).ToString());
                         Thread.Sleep(500);
-                        Console.WriteLine("A Start: "+(a.Start(1000)).ToString() +" Now: "+Environment.TickCount64);
+                        Console.WriteLine("A Start: " + (a.Start(1000)).ToString() + " Now: " + Environment.TickCount64);
                         Thread.Sleep(500);
-                        Console.WriteLine("A Progress: "+(a.GetProgress()).ToString() +" Now: "+Environment.TickCount64);
+                        Console.WriteLine("A Progress: " + (a.GetProgress()).ToString() + " Now: " + Environment.TickCount64);
                         Thread.Sleep(1003);
-                        Console.WriteLine("A TrySet0: "+(a.TrySet0()).ToString());
+                        Console.WriteLine("A TrySet0: " + (a.TrySet0()).ToString());
                     }
                 ).Start();
 
@@ -28,11 +28,11 @@ namespace Homework
                 (
                     () =>
                     {
-                        Console.WriteLine("B Start: "+(a.Start(2000)).ToString());
+                        Console.WriteLine("B Start: " + (a.Start(2000)).ToString());
                         Thread.Sleep(1500);
-                        Console.WriteLine("B Start: " +(a.Start(1000)).ToString() + " Now: " + Environment.TickCount64);
+                        Console.WriteLine("B Start: " + (a.Start(1000)).ToString() + " Now: " + Environment.TickCount64);
                         Thread.Sleep(500);
-                        Console.WriteLine("B Progress: " +(a.GetProgress()).ToString() + " Now: " + Environment.TickCount64);
+                        Console.WriteLine("B Progress: " + (a.GetProgress()).ToString() + " Now: " + Environment.TickCount64);
                     }
                 ).Start();
         }
@@ -63,28 +63,81 @@ namespace Homework
         public (long ElapsedTime, long NeedTime) GetProgress();
     }
 
-    public class LongProgressByTime: ILongProgressByTime
+public class LongProgressByTime: ILongProgressByTime
+{
+    private long startTime;
+    private long needTime;
+    private readonly object locker = new object();
+
+    public bool Start(long needTime)
     {
-        // 根据时间推算Start后完成多少进度的进度条（long）。
-        // 只允许Start时修改needTime（确保较大）；
-        // 支持TrySet0使未完成的进度条终止清零；
-
-        // 只允许修改LongProgressByTime类中的代码
-        // 要求实现ILongProgressByTime中的要求
-        // 可利用Environment.TickCount64获取当前时间（单位ms）
-
-        //挑战：利用原子操作
-        //long.MaxValue非常久
+        lock (locker)
+        {
+            long currentTime = Environment.TickCount64;
+            if (startTime + this.needTime > currentTime)
+            {
+                return false;
+            }
+            else
+            {
+                this.startTime = currentTime;
+                this.needTime = needTime;
+                return true;
+            }
+        }
     }
 
-/*输出示例：
- * A Start: False
-B Start: True
-A TrySet0: True
-B Start: True Now: 14536562
-A Start: False Now: 14536578
-B Progress: (516, 1000) Now: 14537078
-A Progress: (516, 1000) Now: 14537078
-A TrySet0: False
-*/
+    public bool TrySet0()
+    {
+        lock (locker)
+        {
+            long currentTime = Environment.TickCount64;
+            if (startTime + needTime > currentTime)
+            {
+                needTime = 0;
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+    }
+
+    public void Set0()
+    {
+        lock (locker)
+        {
+            startTime = Environment.TickCount64;
+            needTime = 0;
+        }
+    }
+
+    public (long ElapsedTime, long NeedTime) GetProgress()
+    {
+        lock (locker)
+        {
+            long currentTime = Environment.TickCount64;
+            long elapsedTime = currentTime - startTime;
+
+            if (elapsedTime > needTime)
+            {
+                elapsedTime = needTime;
+            }
+
+            return (elapsedTime, needTime);
+        }
+    }
+}
+
+    /*输出示例：
+     * A Start: False
+    B Start: True
+    A TrySet0: True
+    B Start: True Now: 14536562
+    A Start: False Now: 14536578
+    B Progress: (516, 1000) Now: 14537078
+    A Progress: (516, 1000) Now: 14537078
+    A TrySet0: False
+    */
 }
