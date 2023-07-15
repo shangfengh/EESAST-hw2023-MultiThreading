@@ -123,14 +123,14 @@ namespace Homework
         //long.MaxValue非常久
     }
 
-    /*输出示例（仅供参考）：
-     * A Start: False
-    B Start: True
-    A TrySet0: True
-    B Start: True Now: 14536562
-    A Start: False Now: 14536578
-    B Progress: (516, 1000) Now: 14537078
-    A Progress: (516, 1000) Now: 14537078
-    A TrySet0: False
-    */
+/*输出示例（仅供参考）：
+ * A Start: False
+B Start: True
+A TrySet0: True
+B Start: True Now: 14536562
+A Start: False Now: 14536578
+B Progress: (516, 1000) Now: 14537078
+A Progress: (516, 1000) Now: 14537078
+A TrySet0: False
+*/
 }
