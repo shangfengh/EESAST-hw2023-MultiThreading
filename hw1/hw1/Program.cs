@@ -42,18 +42,18 @@ namespace Homework
     {
         /// <summary>
         /// 尝试加载下一次进度条，needTime指再次加载进度条所需时间，单位毫秒
-        /// 如果之前进度条已经清零并终止，则将进度开始下一次加载，返回true
-        /// 如果之前进度条尚未清零并终止，返回false
+        /// 如果之前进度条处于就绪态，则将进度开始下一次加载，返回true
+        /// 如果之前进度条不处于就绪态，返回false
         /// </summary>
         public bool Start(long needTime);
 
         /// <summary>
-        /// 使未完成的进度条清零并终止，返回值代表是否成功终止
+        /// 使未完成的进度条清零并终止变为就绪态，返回值代表是否成功终止
         /// </summary>
         public bool TrySet0();
 
         /// <summary>
-        /// 使进度条强制清零并终止
+        /// 使进度条强制清零并终止变为就绪态
         /// </summary>
         public void Set0();
 
@@ -66,8 +66,6 @@ namespace Homework
     public class LongProgressByTime: ILongProgressByTime
     {
         // 根据时间推算Start后完成多少进度的进度条（long）。
-        // 只允许Start时修改needTime（确保较大）；
-        // 支持TrySet0使未完成的进度条终止清零；
 
         // 只允许修改LongProgressByTime类中的代码
         // 要求实现ILongProgressByTime中的要求
