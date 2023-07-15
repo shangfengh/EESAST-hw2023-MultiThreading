@@ -65,6 +65,49 @@ namespace Homework
 
     public class LongProgressByTime: ILongProgressByTime
     {
+        public long beginTime;
+        public long endTime;
+        private long elapsedTime;
+        public long ElapsedTime { get { return elapsedTime; } set { elapsedTime = value; } }
+        private long needTime;
+        public long NeedTime { get { return needTime; } set { needTime = value; } }
+        public bool Start(long needTime)
+        {
+            if (elapsedTime == 0)
+            {
+                this.needTime = needTime;
+                beginTime = Environment.TickCount64;
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+        public bool TrySet0()
+        {
+            endTime = Environment.TickCount64;
+            elapsedTime = endTime - beginTime;
+            if (elapsedTime < needTime)
+            {
+                elapsedTime = 0;
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+        public void Set0()
+        {
+            elapsedTime = 0;
+        }
+        public (long ElapsedTime, long NeedTime) GetProgress()
+        {
+            endTime = Environment.TickCount64;
+            elapsedTime = endTime - beginTime;
+            return (elapsedTime, needTime);
+        }
         // 根据时间推算Start后完成多少进度的进度条（long）。
         // 只允许Start时修改needTime（确保较大）；
         // 支持TrySet0使未完成的进度条终止清零；
