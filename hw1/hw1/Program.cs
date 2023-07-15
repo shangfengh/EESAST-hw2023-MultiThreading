@@ -69,8 +69,54 @@ namespace Homework
 
         // 只允许修改LongProgressByTime类中的代码
         // 要求实现ILongProgressByTime中的要求
-        // 可利用Environment.TickCount64获取当前时间（单位ms）
-
+        private readonly object rwLock = new ReaderWriterLockSlim();
+        private long maxValue;
+        private long needTimeRecord;
+        private bool isProcessing = false;
+        public bool Start(long needTime)
+        {
+            lock (rwLock)
+            {
+                if (Environment.TickCount64 >= this.maxValue || !this.isProcessing)
+                {
+                    this.maxValue = Environment.TickCount64 + needTime;
+                    this.needTimeRecord = needTime;
+                    this.isProcessing = true;
+                    return true;
+                }
+                return false;
+            }
+        }
+        public bool TrySet0()
+        {
+            lock (rwLock)
+            {
+                if (Environment.TickCount64 >= this.maxValue || !this.isProcessing)
+                    return false;
+                this.isProcessing = false;
+                return true;
+            }
+        }
+        public void Set0()
+        {
+            lock (rwLock)
+            {
+                this.isProcessing = false;
+            }
+        }
+        public (long ElapsedTime, long NeedTime) GetProgress()
+        {
+            lock (rwLock)
+            {
+                if (!isProcessing)
+                    return (0, this.needTimeRecord);
+                else if (Environment.TickCount64 >= this.maxValue)
+                    return (this.needTimeRecord, this.needTimeRecord);
+                else
+                    return (this.needTimeRecord - this.maxValue + Environment.TickCount64, this.needTimeRecord);
+            }
+        }
+        
         //挑战：利用原子操作
         //long.MaxValue非常久
     }
