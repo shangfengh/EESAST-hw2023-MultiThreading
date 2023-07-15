@@ -73,18 +73,64 @@ namespace Homework
         // 要求实现ILongProgressByTime中的要求
         // 可利用Environment.TickCount64获取当前时间（单位ms）
 
+        public long StartPoint;
+        public object lockObject = new object();
+        public long TimeLeft;
+        
         //挑战：利用原子操作
         //long.MaxValue非常久
+        public bool Start(long needTime)
+        {
+            lock (lockObject)
+            {
+                if (TimeLeft > 0)
+                    return false;
+                StartPoint = Environment.TickCount64;
+                TimeLeft = needTime;
+                return true;
+
+            }
+        }
+
+        public bool TrySet0()
+        {
+            lock (lockObject)
+            {
+                if (TimeLeft > 0)
+                {
+                    TimeLeft = 0;
+                    return true;
+                }
+                else return false;
+            }
+        }
+
+        public void Set0()
+        {
+            lock (lockObject)
+            {
+                TimeLeft = 0;
+            }
+        }
+
+        public (long ElapsedTime, long NeedTime) GetProgress()
+        {
+            lock (lockObject)
+            {
+                long Interval = Environment.TickCount64 - StartPoint;
+                return (Interval, TimeLeft);
+            }
+        }
     }
 
-/*输出示例：
- * A Start: False
-B Start: True
-A TrySet0: True
-B Start: True Now: 14536562
-A Start: False Now: 14536578
-B Progress: (516, 1000) Now: 14537078
-A Progress: (516, 1000) Now: 14537078
-A TrySet0: False
-*/
+    /*输出示例：
+     * A Start: False
+    B Start: True
+    A TrySet0: True
+    B Start: True Now: 14536562
+    A Start: False Now: 14536578
+    B Progress: (516, 1000) Now: 14537078
+    A Progress: (516, 1000) Now: 14537078
+    A TrySet0: False
+    */
 }
