@@ -63,26 +63,75 @@ namespace Homework
         public (long ElapsedTime, long NeedTime) GetProgress();
     }
 
-    public class LongProgressByTime: ILongProgressByTime
+    public class LongProgressByTime : ILongProgressByTime
     {
         // 根据时间推算Start后完成多少进度的进度条（long）。
-
+        public long startTime;//从0开始加载的时间
+        public long needTime;//可能需要记一下总时间
+        public long elapsedTime;//已经经过的时间,当进度条使
+        public bool isReady;//是否处于就绪态
+        public LongProgressByTime()//构造函数
+        {
+            startTime = Environment.TickCount64;
+            isReady = true;
+        }
         // 只允许修改LongProgressByTime类中的代码
         // 要求实现ILongProgressByTime中的要求
         // 可利用Environment.TickCount64获取当前时间（单位ms）
 
         //挑战：利用原子操作
         //long.MaxValue非常久
+        public (long ElapsedTime, long NeedTime) GetProgress()
+        {
+            return (Environment.TickCount64-startTime,needTime);
+        }
+
+        public void Set0()
+        {
+            elapsedTime = 0;
+            startTime = Environment.TickCount64;
+            isReady = true;
+        }
+
+        public bool Start(long NeedTime)
+        {
+            if(isReady)
+            {
+                needTime = NeedTime;
+                isReady = false;
+                return true;
+            }
+            else
+            {
+                needTime = NeedTime;
+                return false;
+            }
+        }
+
+        public bool TrySet0()
+        {
+            if(Environment.TickCount64-startTime>=needTime) //完成了,不动它
+            {
+                return false;
+            }
+            else
+            {
+                startTime = Environment.TickCount64;//重置时间
+                elapsedTime = 0;
+                isReady = true;
+                return true;
+            }
+        }
     }
 
-/*输出示例（仅供参考）：
- * A Start: False
-B Start: True
-A TrySet0: True
-B Start: True Now: 14536562
-A Start: False Now: 14536578
-B Progress: (516, 1000) Now: 14537078
-A Progress: (516, 1000) Now: 14537078
-A TrySet0: False
-*/
+    /*输出示例（仅供参考）：
+     * A Start: False
+    B Start: True
+    A TrySet0: True
+    B Start: True Now: 14536562
+    A Start: False Now: 14536578
+    B Progress: (516, 1000) Now: 14537078
+    A Progress: (516, 1000) Now: 14537078
+    A TrySet0: False
+    */
 }
