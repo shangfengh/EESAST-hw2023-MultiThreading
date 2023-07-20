@@ -1,5 +1,5 @@
 using System;
-using System.Threading;
+using System.Diagnostics;
 namespace Homework
 {
     public class Program
