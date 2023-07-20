@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+
 namespace Homework
 {
     public class Program
@@ -36,6 +37,7 @@ namespace Homework
                 ).Start();
         }
     }
+    
     public interface ILongProgressByTime
     {
         /// <summary>
@@ -60,6 +62,7 @@ namespace Homework
         /// </summary>
         public (long ElapsedTime, long NeedTime) GetProgress();
     }
+    
     public class LongProgressByTime : ILongProgressByTime
     {
         private long startTime;
