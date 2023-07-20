@@ -1,6 +1,5 @@
-﻿using System;
-using System.Diagnostics;
-
+using System;
+using System.Threading;
 namespace Homework
 {
     public class Program
@@ -37,7 +36,6 @@ namespace Homework
                 ).Start();
         }
     }
-
     public interface ILongProgressByTime
     {
         /// <summary>
@@ -62,29 +60,96 @@ namespace Homework
         /// </summary>
         public (long ElapsedTime, long NeedTime) GetProgress();
     }
-
-    public class LongProgressByTime: ILongProgressByTime
+    public class LongProgressByTime : ILongProgressByTime
     {
-        // 根据时间推算Start后完成多少进度的进度条（long）。
-        // 只允许Start时修改needTime（确保较大）；
-        // 支持TrySet0使未完成的进度条终止清零；
+        private long startTime;
+        private long needTime;
+        private long elapsed;
+        private bool isRunning;
+        private readonly object lockObject = new object();
+        public bool Start(long needTime)
+        {
+            lock (lockObject)
+            {
+                if (isRunning)
+                {
+                    return false;
+                }
 
-        // 只允许修改LongProgressByTime类中的代码
-        // 要求实现ILongProgressByTime中的要求
-        // 可利用Environment.TickCount64获取当前时间（单位ms）
+                this.needTime = needTime;
+                startTime = Environment.TickCount64;
+                elapsed = 0;
+                isRunning = true;
 
-        //挑战：利用原子操作
-        //long.MaxValue非常久
+                return true;
+            }
+        }
+        public bool TrySet0()
+        {
+            lock (lockObject)
+            {
+                if (!isRunning)
+                {
+                    return false;
+                }
+
+                elapsed = 0;
+                isRunning = false;
+
+                return true;
+            }
+        }
+        public void Set0()
+        {
+            lock (lockObject)
+            {
+                elapsed = 0;
+                isRunning = false;
+            }
+        }
+        public (long ElapsedTime, long NeedTime) GetProgress()
+        {
+            lock (lockObject)
+            {
+                return (elapsed, needTime);
+            }
+        }
+        public LongProgressByTime()
+        {
+            var t = new Thread(()=>
+            {
+                while (isRunning)
+                {
+                    Thread.Sleep(1);
+                    lock (lockObject)
+                    {
+                        if (!isRunning)
+                        {
+                            break;
+                        }
+                        elapsed = Environment.TickCount64 - startTime;
+                        if (elapsed >= needTime)
+                        {
+                            elapsed = needTime;
+                            isRunning = false;
+                        }
+                    }
+                }
+            }
+            );
+            t.IsBackground = true;
+            t.Start();
+        }
     }
 
-/*输出示例：
- * A Start: False
-B Start: True
-A TrySet0: True
-B Start: True Now: 14536562
-A Start: False Now: 14536578
-B Progress: (516, 1000) Now: 14537078
-A Progress: (516, 1000) Now: 14537078
-A TrySet0: False
-*/
+    /*输出示例：
+    A Start: False
+    B Start: True
+    A TrySet0: True
+    B Start: True Now: 14536562
+    A Start: False Now: 14536578
+    B Progress: (516, 1000) Now: 14537078
+    A Progress: (516, 1000) Now: 14537078
+    A TrySet0: False
+    */
 }
