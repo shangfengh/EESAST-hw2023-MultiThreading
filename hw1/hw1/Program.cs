@@ -73,46 +73,65 @@ namespace Homework
 
         //挑战：利用原子操作
         //long.MaxValue非常久
-        public long needTime = 0;
-        public long finishedTime = 0;
-        public long startTime = 0;
-        public bool readystate = true;
+        private long needTime = 0;
+        private long finishedTime = 0;
+        private long startTime = 0;
+        private bool readystate = true;
+        private static readonly object lockobject  = new();
 
         public bool Start(long x)
         {
-            if (readystate)
-            {
-                readystate = false;
-                startTime = Environment.TickCount64;
-                needTime = x;
-                return true;
-            }
-            else
-            {
-                return false;
+            lock(lockobject){
+                if (readystate)
+                {
+                    readystate = false;
+                    startTime = Environment.TickCount64;
+                    needTime = x;
+                    return true;
+                }
+                else
+                {
+                    return false;
+                } 
             }
         }
         public bool TrySet0()
-        {   
-            finishedTime = Environment.TickCount64 - startTime;
-            if(finishedTime < needTime)
+        {
+            lock (lockobject)
             {
-                readystate = true;
-                return true;
-            }
-            else
-            {
-                return false;
+                finishedTime = Environment.TickCount64 - startTime;
+                if (finishedTime < needTime)
+                {
+                    readystate = true;
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
             }
         }
         public void Set0()
         {
-            readystate = true;
+            lock (lockobject)
+            {
+                readystate = true;
+            }
         }
         public (long ElapsedTime, long NeedTime) GetProgress()
         {
-            finishedTime = Environment.TickCount64 - startTime;
-            return (finishedTime, needTime);
+            lock (lockobject)
+            {
+                finishedTime = Environment.TickCount64 - startTime;
+                if (readystate == false)
+                {
+                    return (finishedTime, needTime);
+                }
+                else
+                {
+                    return (0, needTime);
+                }
+            }
         }
 
     }
