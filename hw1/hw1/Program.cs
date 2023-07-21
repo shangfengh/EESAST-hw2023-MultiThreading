@@ -73,6 +73,67 @@ namespace Homework
 
         //挑战：利用原子操作
         //long.MaxValue非常久
+        private long needTime = 0;
+        private long finishedTime = 0;
+        private long startTime = 0;
+        private bool readystate = true;
+        private static readonly object lockobject  = new();
+
+        public bool Start(long x)
+        {
+            lock(lockobject){
+                if (readystate)
+                {
+                    readystate = false;
+                    startTime = Environment.TickCount64;
+                    needTime = x;
+                    return true;
+                }
+                else
+                {
+                    return false;
+                } 
+            }
+        }
+        public bool TrySet0()
+        {
+            lock (lockobject)
+            {
+                finishedTime = Environment.TickCount64 - startTime;
+                if (finishedTime < needTime)
+                {
+                    readystate = true;
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+        }
+        public void Set0()
+        {
+            lock (lockobject)
+            {
+                readystate = true;
+            }
+        }
+        public (long ElapsedTime, long NeedTime) GetProgress()
+        {
+            lock (lockobject)
+            {
+                finishedTime = Environment.TickCount64 - startTime;
+                if (readystate == false)
+                {
+                    return (finishedTime, needTime);
+                }
+                else
+                {
+                    return (0, needTime);
+                }
+            }
+        }
+
     }
 
 /*输出示例（仅供参考）：
