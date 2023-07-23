@@ -1,6 +1,5 @@
 using System;
-using System.Diagnostics;
-
+using System.Threading;
 namespace Homework
 {
     public class Program
@@ -37,7 +36,6 @@ namespace Homework
                 ).Start();
         }
     }
-    
     public interface ILongProgressByTime
     {
         /// <summary>
@@ -62,86 +60,88 @@ namespace Homework
         /// </summary>
         public (long ElapsedTime, long NeedTime) GetProgress();
     }
-    
     public class LongProgressByTime : ILongProgressByTime
     {
-        private long startTime;
-        private long needTime;
-        private long elapsed;
-        private bool isRunning;
+        private long _startTime;
+        private long _needTime;
+        private bool _isRunning;
         private readonly object lockObject = new object();
+        private long elapsed;
+        public LongProgressByTime()
+        {
+            _isRunning = false;
+            _startTime = 0;
+            _needTime = 0;
+        }
+
         public bool Start(long needTime)
         {
-            lock (lockObject)
+            lock(lockObject)
             {
-                if (isRunning)
+                if (!_isRunning)
+                {
+                    _startTime = Environment.TickCount64;
+                    _needTime = needTime;
+                    _isRunning = true;
+                    return true;
+                }
+                else
                 {
                     return false;
                 }
-
-                this.needTime = needTime;
-                startTime = Environment.TickCount64;
-                elapsed = 0;
-                isRunning = true;
-
-                return true;
             }
         }
+
         public bool TrySet0()
         {
             lock (lockObject)
             {
-                if (!isRunning)
+                if (_isRunning && Environment.TickCount64 < _startTime + _needTime)
+                {
+                    _isRunning = false;
+                    _startTime = 0;
+                    _needTime = 0;
+                    return true;
+                }
+                else
                 {
                     return false;
                 }
-
-                elapsed = 0;
-                isRunning = false;
-
-                return true;
             }
         }
+
         public void Set0()
         {
-            lock (lockObject)
+            lock(lockObject) 
             {
-                elapsed = 0;
-                isRunning = false;
-            }
+                _isRunning = false;
+                _startTime = 0;
+                _needTime = 0;
+            }   
         }
+
         public (long ElapsedTime, long NeedTime) GetProgress()
         {
-            lock (lockObject)
+            lock(lockObject)
             {
-                return (elapsed, needTime);
-            }
-        }
-        public LongProgressByTime()
-        {
-            var t = new Thread(()=>
-            {
-                while (isRunning)
+                if (_isRunning)
                 {
-                    Thread.Sleep(1);
-                    lock (lockObject)
+                    elapsed = Environment.TickCount64 - _startTime;
+                    if (elapsed >= _needTime)
                     {
-                        if (!isRunning)
-                        {
-                            break;
-                        }
-                        elapsed = Environment.TickCount64 - startTime;
-                        if (elapsed >= needTime)
-                        {
-                            elapsed = needTime;
-                            isRunning = false;
-                        }
+                        _isRunning = false;
+                        return (_needTime, _needTime);
+                    }
+                    else
+                    {
+                        return (elapsed, _needTime);
                     }
                 }
+                else
+                {
+                    return (0, 0);
+                }
             }
-            );
-            t.IsBackground = true;
-            t.Start();
         }
     }
 
