@@ -1,6 +1,5 @@
-﻿using System;
-using System.Diagnostics;
-
+using System;
+using System.Threading;
 namespace Homework
 {
     public class Program
@@ -37,23 +36,22 @@ namespace Homework
                 ).Start();
         }
     }
-
     public interface ILongProgressByTime
     {
         /// <summary>
         /// 尝试加载下一次进度条，needTime指再次加载进度条所需时间，单位毫秒
-        /// 如果之前进度条处于就绪态，则将进度开始下一次加载，返回true
-        /// 如果之前进度条不处于就绪态，返回false
+        /// 如果之前进度条已经终止，则将进度开始下一次加载，返回true
+        /// 如果之前进度条尚未终止，返回false
         /// </summary>
         public bool Start(long needTime);
 
         /// <summary>
-        /// 使未完成的进度条清零并终止变为就绪态，返回值代表是否成功终止
+        /// 使未完成的进度条终止清零，返回值代表是否成功终止
         /// </summary>
         public bool TrySet0();
 
         /// <summary>
-        /// 使进度条强制清零并终止变为就绪态
+        /// 使进度条强制终止清零
         /// </summary>
         public void Set0();
 
@@ -62,27 +60,99 @@ namespace Homework
         /// </summary>
         public (long ElapsedTime, long NeedTime) GetProgress();
     }
-
-    public class LongProgressByTime: ILongProgressByTime
+    public class LongProgressByTime : ILongProgressByTime
     {
-        // 根据时间推算Start后完成多少进度的进度条（long）。
+        private long _startTime;
+        private long _needTime;
+        private bool _isRunning;
+        private readonly object lockObject = new object();
+        private long elapsed;
+        public LongProgressByTime()
+        {
+            _isRunning = false;
+            _startTime = 0;
+            _needTime = 0;
+        }
 
-        // 只允许修改LongProgressByTime类中的代码
-        // 要求实现ILongProgressByTime中的要求
-        // 可利用Environment.TickCount64获取当前时间（单位ms）
+        public bool Start(long needTime)
+        {
+            lock(lockObject)
+            {
+                if (!_isRunning)
+                {
+                    _startTime = Environment.TickCount64;
+                    _needTime = needTime;
+                    _isRunning = true;
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+        }
 
-        //挑战：利用原子操作
-        //long.MaxValue非常久
+        public bool TrySet0()
+        {
+            lock (lockObject)
+            {
+                if (_isRunning && Environment.TickCount64 < _startTime + _needTime)
+                {
+                    _isRunning = false;
+                    _startTime = 0;
+                    _needTime = 0;
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+        }
+
+        public void Set0()
+        {
+            lock(lockObject) 
+            {
+                _isRunning = false;
+                _startTime = 0;
+                _needTime = 0;
+            }   
+        }
+
+        public (long ElapsedTime, long NeedTime) GetProgress()
+        {
+            lock(lockObject)
+            {
+                if (_isRunning)
+                {
+                    elapsed = Environment.TickCount64 - _startTime;
+                    if (elapsed >= _needTime)
+                    {
+                        _isRunning = false;
+                        return (_needTime, _needTime);
+                    }
+                    else
+                    {
+                        return (elapsed, _needTime);
+                    }
+                }
+                else
+                {
+                    return (0, 0);
+                }
+            }
+        }
     }
 
-/*输出示例（仅供参考）：
- * A Start: False
-B Start: True
-A TrySet0: True
-B Start: True Now: 14536562
-A Start: False Now: 14536578
-B Progress: (516, 1000) Now: 14537078
-A Progress: (516, 1000) Now: 14537078
-A TrySet0: False
-*/
+    /*输出示例：
+    A Start: False
+    B Start: True
+    A TrySet0: True
+    B Start: True Now: 14536562
+    A Start: False Now: 14536578
+    B Progress: (516, 1000) Now: 14537078
+    A Progress: (516, 1000) Now: 14537078
+    A TrySet0: False
+    */
 }
