@@ -73,6 +73,75 @@ namespace Homework
 
         //挑战：利用原子操作
         //long.MaxValue非常久
+
+        private readonly object _lock = new();
+        private bool isReady = true;
+        public long NeedTime { get; private set; }
+        public long StartTime { get; private set; }
+
+        /// <summary>
+        /// 尝试加载下一次进度条，needTime指再次加载进度条所需时间，单位毫秒
+        /// 如果之前进度条处于就绪态，则将进度开始下一次加载，返回true
+        /// 如果之前进度条不处于就绪态，返回false
+        /// </summary>
+        public bool Start(long needTime)
+        {
+            lock (_lock)
+            {
+                if (isReady)
+                {
+                    isReady = false;
+                    NeedTime = needTime;
+                    StartTime = Environment.TickCount64;
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+        }
+
+        /// <summary>
+        /// 使未完成的进度条清零并终止变为就绪态，返回值代表是否成功终止
+        /// </summary>
+        public bool TrySet0()
+        {
+            bool flag = Environment.TickCount64 - StartTime >= NeedTime && !isReady;
+            lock (_lock)
+            {
+                if (flag)
+                {
+                    return false;
+                }
+                else
+                {
+                    StartTime = Environment.TickCount64;
+                    isReady = true;
+                    return true;
+                }
+            }
+        }
+
+        /// <summary>
+        /// 使进度条强制清零并终止变为就绪态
+        /// </summary>
+        public void Set0()
+        {
+            lock (_lock)
+            {
+                StartTime = Environment.TickCount64;
+                isReady = true;
+            }
+        }
+
+        /// <summary>
+        ///     ElapsedTime指其中已过去的时间，NeedTime指当前Progress完成所需时间，单位毫秒
+        /// </summary>
+        public (long ElapsedTime, long NeedTime) GetProgress()
+        {
+            return (Environment.TickCount64 - StartTime, NeedTime);
+        }
     }
 
 /*输出示例（仅供参考）：
