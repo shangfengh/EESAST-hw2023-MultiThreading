@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Data;
 using System.Diagnostics;
 
 namespace Homework
@@ -23,7 +24,6 @@ namespace Homework
                         Console.WriteLine("A TrySet0: "+(a.TrySet0()).ToString());
                     }
                 ).Start();
-
             new Thread
                 (
                     () =>
@@ -63,8 +63,76 @@ namespace Homework
         public (long ElapsedTime, long NeedTime) GetProgress();
     }
 
-    public class LongProgressByTime: ILongProgressByTime
-    {
+    public class LongProgressByTime : ILongProgressByTime {
+
+        private bool ready;
+        private long needTime;
+        private long startTime;
+        static private object lockob = new object();
+
+        public LongProgressByTime() {
+            ready = true;
+            needTime = startTime = 0;
+        }
+
+        private void Update() {
+            if (!ready && Environment.TickCount64 - startTime >= needTime) {
+                ready = true;
+            }
+        }
+
+        /// <summary>
+        /// 尝试加载下一次进度条，needTime指再次加载进度条所需时间，单位毫秒
+        /// 如果之前进度条处于就绪态，则将进度开始下一次加载，返回true
+        /// 如果之前进度条不处于就绪态，返回false
+        /// </summary>
+        public bool Start(long needTime){
+            lock (lockob) {
+                Update();
+                if (!ready) {
+                    return false;
+                }
+                ready = false;
+                this.needTime = needTime;
+                startTime = Environment.TickCount64;
+                return true;
+            }
+        }
+
+        /// <summary>
+        /// 使未完成的进度条清零并终止变为就绪态，返回值代表是否成功终止
+        /// </summary>
+        public bool TrySet0() {
+            lock (lockob) {
+                Update();
+                if (ready)
+                    return false;
+                startTime = Environment.TickCount64;
+                ready = true;
+                return true;
+            }
+        }
+
+        /// <summary>
+        /// 使进度条强制清零并终止变为就绪态
+        /// </summary>
+        public void Set0() {
+            lock (lockob) {
+                Update();
+                startTime = Environment.TickCount64;
+                ready = false;
+            }
+        }
+
+        /// <summary>
+        ///     ElapsedTime指其中已过去的时间，NeedTime指当前Progress完成所需时间，单位毫秒
+        /// </summary>
+        public (long ElapsedTime, long NeedTime) GetProgress() {
+            lock (lockob) {
+                Update();
+                return (Environment.TickCount64 - startTime, needTime);
+            }
+        }
         // 根据时间推算Start后完成多少进度的进度条（long）。
 
         // 只允许修改LongProgressByTime类中的代码
