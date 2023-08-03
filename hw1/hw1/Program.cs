@@ -70,7 +70,74 @@ namespace Homework
         // 只允许修改LongProgressByTime类中的代码
         // 要求实现ILongProgressByTime中的要求
         // 可利用Environment.TickCount64获取当前时间（单位ms）
+        private long startTime;
+        private long needTime;
+        private long elapsedTime;
 
+        public bool Start(long needTime)
+        {
+            lock (this) // 为了线程安全性，在访问共享变量时使用锁来同步线程
+            {
+                if (startTime == 0 && elapsedTime == 0) // 进度尚未开始或已经完成
+                {
+                    this.needTime = needTime;
+                    startTime = Environment.TickCount64;
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+        }
+
+        public bool TrySet0()
+        {
+            lock (this)
+            {
+                if (startTime != 0 && elapsedTime == 0) // 进度正在进行中且尚未完成
+                {
+                    startTime = 0;
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+        }
+
+        public void Set0()
+        {
+            lock (this)
+            {
+                startTime = 0;
+            }
+        }
+
+        public (long ElapsedTime, long NeedTime) GetProgress()
+        {
+            lock (this)
+            {
+                if (startTime != 0)
+                {
+                    elapsedTime = Environment.TickCount64 - startTime;
+                    if (elapsedTime >= needTime) // 进度已完成
+                    {
+                        startTime = 0;
+                        return (elapsedTime, needTime);
+                    }
+                    else // 进度正在进行中
+                    {
+                        return (elapsedTime, needTime);
+                    }
+                }
+                else // 进度尚未开始或已经完成
+                {
+                    return (0, 0);
+                }
+            }
+        }
         //挑战：利用原子操作
         //long.MaxValue非常久
     }
