@@ -1,26 +1,27 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace Homework
 {
     public class Program
     {
-        public static void Main(string[] args) 
+        public static void Main(string[] args)
         {
             ILongProgressByTime a = new LongProgressByTime();
             new Thread
                 (
                     () =>
                     {
-                        Console.WriteLine("A Start: "+(a.Start(2000)).ToString());
+                        Console.WriteLine("A Start: " + (a.Start(2000)).ToString());
                         Thread.Sleep(1000);
-                        Console.WriteLine("A TrySet0: "+(a.TrySet0()).ToString());
+                        Console.WriteLine("A TrySet0: " + (a.TrySet0()).ToString());
                         Thread.Sleep(500);
-                        Console.WriteLine("A Start: "+(a.Start(1000)).ToString() +" Now: "+Environment.TickCount64);
+                        Console.WriteLine("A Start: " + (a.Start(1000)).ToString() + " Now: " + Environment.TickCount64);
                         Thread.Sleep(500);
-                        Console.WriteLine("A Progress: "+(a.GetProgress()).ToString() +" Now: "+Environment.TickCount64);
+                        Console.WriteLine("A Progress: " + (a.GetProgress()).ToString() + " Now: " + Environment.TickCount64);
                         Thread.Sleep(1003);
-                        Console.WriteLine("A TrySet0: "+(a.TrySet0()).ToString());
+                        Console.WriteLine("A TrySet0: " + (a.TrySet0()).ToString());
                     }
                 ).Start();
 
@@ -28,11 +29,11 @@ namespace Homework
                 (
                     () =>
                     {
-                        Console.WriteLine("B Start: "+(a.Start(2000)).ToString());
+                        Console.WriteLine("B Start: " + (a.Start(2000)).ToString());
                         Thread.Sleep(1500);
-                        Console.WriteLine("B Start: " +(a.Start(1000)).ToString() + " Now: " + Environment.TickCount64);
+                        Console.WriteLine("B Start: " + (a.Start(1000)).ToString() + " Now: " + Environment.TickCount64);
                         Thread.Sleep(500);
-                        Console.WriteLine("B Progress: " +(a.GetProgress()).ToString() + " Now: " + Environment.TickCount64);
+                        Console.WriteLine("B Progress: " + (a.GetProgress()).ToString() + " Now: " + Environment.TickCount64);
                     }
                 ).Start();
         }
@@ -63,7 +64,7 @@ namespace Homework
         public (long ElapsedTime, long NeedTime) GetProgress();
     }
 
-    public class LongProgressByTime: ILongProgressByTime
+    public class LongProgressByTime : ILongProgressByTime
     {
         // 根据时间推算Start后完成多少进度的进度条（long）。
 
@@ -73,16 +74,44 @@ namespace Homework
 
         //挑战：利用原子操作
         //long.MaxValue非常久
+        private bool ready = true;
+        private long needTime = 0;
+        private long startTime = 0;
+        public bool Start(long needTime)
+        {
+            if (Environment.TickCount64 - startTime >= needTime)
+                ready = true;
+            if (ready)
+            {
+                this.needTime = needTime;
+                startTime = Environment.TickCount64;
+                ready = false;
+                return true;
+            }
+            return false;
+        }
+        public bool TrySet0()
+        {
+            if (Environment.TickCount64 - startTime >= needTime)
+                ready = true;
+            if (!ready)
+            {
+                ready = true;
+                return true;
+            }
+            return false;
+        }
+        public void Set0() => ready = true;
+        public (long ElapsedTime, long NeedTime) GetProgress() => (Environment.TickCount64 - startTime, needTime);
     }
-
-/*输出示例（仅供参考）：
- * A Start: False
-B Start: True
-A TrySet0: True
-B Start: True Now: 14536562
-A Start: False Now: 14536578
-B Progress: (516, 1000) Now: 14537078
-A Progress: (516, 1000) Now: 14537078
-A TrySet0: False
-*/
+    /*输出示例（仅供参考）：
+     * A Start: False
+    B Start: True
+    A TrySet0: True
+    B Start: True Now: 14536562
+    A Start: False Now: 14536578
+    B Progress: (516, 1000) Now: 14537078
+    A Progress: (516, 1000) Now: 14537078
+    A TrySet0: False
+    */
 }
